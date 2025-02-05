@@ -1,0 +1,76 @@
+const express = require('express');
+const path = require('path');
+const app = express();
+const port = 3000;
+
+// بيانات وهمية للمستخدمين
+const users = [
+  { email: 'test@example.com', password: '123456', name: 'محمد' },
+  { email: 'user@example.com', password: 'password', name: 'أحمد' }
+];
+
+// إعدادات الواجهة الأمامية
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json());
+
+// صفحة تسجيل الدخول (واجهة HTML)
+app.get('/', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="ar">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>تسجيل الدخول</title>
+    </head>
+    <body>
+        <h2>تسجيل الدخول</h2>
+        <form id="loginForm">
+            <input type="email" id="email" placeholder="البريد الإلكتروني" required>
+            <input type="password" id="password" placeholder="كلمة المرور" required>
+            <button type="submit">تسجيل الدخول</button>
+        </form>
+        <h3 id="welcomeMessage"></h3>
+
+        <script>
+            document.getElementById("loginForm").addEventListener("submit", async function(event) {
+                event.preventDefault();
+                
+                const email = document.getElementById("email").value;
+                const password = document.getElementById("password").value;
+
+                const response = await fetch("/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById("welcomeMessage").innerText = "مرحبًا " + data.name;
+                } else {
+                    alert("بيانات تسجيل الدخول غير صحيحة!");
+                }
+            });
+        </script>
+    </body>
+    </html>
+  `);
+});
+
+// معالجة بيانات تسجيل الدخول
+app.post('/login', (req, res) => {
+  const { email, password } = req.body;
+  const user = users.find(u => u.email === email && u.password === password);
+
+  if (user) {
+    res.json({ success: true, name: user.name });
+  } else {
+    res.json({ success: false });
+  }
+});
+
+// تشغيل الخادم
+app.listen(port, () => {
+  console.log(`الخادم يعمل على http://localhost:${port}`);
+});
