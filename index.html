@@ -3,8 +3,8 @@ const path = require('path');
 const app = express();
 const port = 3000;
 
-// بيانات وهمية للمستخدمين
-const users = [
+// قائمة لتخزين بيانات المستخدمين (يمكنك استخدام قاعدة بيانات حقيقية لاحقًا)
+let users = [
   { email: 'test@example.com', password: '123456', name: 'محمد' },
   { email: 'user@example.com', password: 'password', name: 'أحمد' }
 ];
@@ -12,6 +12,51 @@ const users = [
 // إعدادات الواجهة الأمامية
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
+
+// صفحة التسجيل (واجهة HTML)
+app.get('/register', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="ar">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>التسجيل</title>
+    </head>
+    <body>
+        <h2>تسجيل حساب جديد</h2>
+        <form id="registerForm">
+            <input type="email" id="email" placeholder="البريد الإلكتروني" required>
+            <input type="password" id="password" placeholder="كلمة المرور" required>
+            <button type="submit">تسجيل</button>
+        </form>
+        <h3 id="registerMessage"></h3>
+
+        <script>
+            document.getElementById("registerForm").addEventListener("submit", async function(event) {
+                event.preventDefault();
+
+                const email = document.getElementById("email").value;
+                const password = document.getElementById("password").value;
+
+                const response = await fetch("/register", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById("registerMessage").innerText = "تم التسجيل بنجاح! يمكنك الآن تسجيل الدخول.";
+                } else {
+                    alert("البريد الإلكتروني موجود مسبقًا!");
+                }
+            });
+        </script>
+    </body>
+    </html>
+  `);
+});
 
 // صفحة تسجيل الدخول (واجهة HTML)
 app.get('/', (req, res) => {
@@ -35,7 +80,7 @@ app.get('/', (req, res) => {
         <script>
             document.getElementById("loginForm").addEventListener("submit", async function(event) {
                 event.preventDefault();
-                
+
                 const email = document.getElementById("email").value;
                 const password = document.getElementById("password").value;
 
@@ -56,6 +101,23 @@ app.get('/', (req, res) => {
     </body>
     </html>
   `);
+});
+
+// معالجة بيانات التسجيل
+app.post('/register', (req, res) => {
+  const { email, password } = req.body;
+  
+  // التحقق إذا كان البريد الإلكتروني موجودًا مسبقًا
+  const existingUser = users.find(u => u.email === email);
+  if (existingUser) {
+    return res.json({ success: false });
+  }
+
+  // إضافة المستخدم الجديد إلى القائمة
+  const newUser = { email, password, name: email.split('@')[0] };
+  users.push(newUser);
+
+  res.json({ success: true });
 });
 
 // معالجة بيانات تسجيل الدخول
